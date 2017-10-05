@@ -9,7 +9,7 @@ This is a guide to install [Kubo](https://github.com/cloudfoundry-incubator/kubo
 ## Bosh Lite Installation
 1. First checkout the `bosh-deployment` and `kubo-bosh-lite` repos
 	```bash
-	git clone https://github.com/cloudfoundry/bosh-deployment 
+	git clone https://github.com/cloudfoundry/bosh-deployment
 	git clone https://github.com/bstick12/kubo-bosh-lite.git
 	```
 
@@ -18,7 +18,7 @@ This is a guide to install [Kubo](https://github.com/cloudfoundry-incubator/kubo
 	mkdir kubo
 	```
 
-1. Create BOSH deployment. Kubo has some additional requirements to the standard BOSH lite installation. 
+1. Create BOSH deployment. Kubo has some additional requirements to the standard BOSH lite installation.
 	* powerdns
 	* uaa
 	* credhub
@@ -44,8 +44,10 @@ This is a guide to install [Kubo](https://github.com/cloudfoundry-incubator/kubo
 	```
 
 1. Get the admin password from the `kubo/creds.yml` and then login to your BOSH environment
-	```bash
-	bosh -e 192.168.50.6 login --ca-cert <(bosh int kubo/creds.yml --path /director_ssl/ca) 
+	```
+	export BOSH_CLIENT=admin
+	export BOSH_CLIENT_SECRET=`bosh int kubo/creds.yml --path /admin_password`
+	bosh -e 192.168.50.6 login --ca-cert <(bosh int kubo/creds.yml --path /director_ssl/ca)
 	```
 
 1. Create a alias `kubo` for the BOSH environment
@@ -55,7 +57,7 @@ This is a guide to install [Kubo](https://github.com/cloudfoundry-incubator/kubo
 
 1. Upload the stemcell for usage with KUBO
 	```bash
-	bosh -e kubo upload-stemcell "https://s3.amazonaws.com/bosh-core-stemcells/warden/bosh-stemcell-3421.11-warden-boshlite-ubuntu-trusty-go_agent.tgz"
+	bosh -e kubo upload-stemcell "https://s3.amazonaws.com/bosh-core-stemcells/warden/bosh-stemcell-3445.11-warden-boshlite-ubuntu-trusty-go_agent.tgz"
 	```
 
 1. Upload the latest version of the Kubo release
@@ -71,7 +73,7 @@ This is a guide to install [Kubo](https://github.com/cloudfoundry-incubator/kubo
 1. Deploy Kubo
 
 	This deployment of Kubo consists of only a single master, kuboetcd and two workers
- 
+
 	```bash
 	bosh -e kubo deploy -d kubo-bosh-lite kubo-bosh-lite/kubo.yml -v kubernetes_master_host=10.240.0.2
 	```
@@ -88,21 +90,19 @@ This is a guide to install [Kubo](https://github.com/cloudfoundry-incubator/kubo
 	CREDHUB_CA_CERT=$(bosh int --path /credhub_tls/ca kubo/creds.yml)
 	credhub login -u credhub-cli -p ${CREDHUB_PWD} -s https://192.168.50.6:8844 --skip-tls-validation
 	bosh int <(credhub get -n "/kubo-bosh-lite/kubo-bosh-lite/tls-kubernetes" --output-json) --path=/value/ca > kubo/kubernetes.crt
-	kubectl config set-cluster kubo-bosh-lite --server https://10.240.0.2:8443 --embed-certs=true --certificate-authority=kubo/kubernetes.crt 
+	kubectl config set-cluster kubo-bosh-lite --server https://10.240.0.2:8443 --embed-certs=true --certificate-authority=kubo/kubernetes.crt
 	KUBERNETES_PWD=$(bosh int <(credhub get -n "/kubo-bosh-lite/kubo-bosh-lite/kubo-admin-password" --output-json) --path=/value)
 	kubectl config set-credentials "kubo-bosh-lite-admin" --token=${KUBERNETES_PWD}
 	kubectl config set-context "kubo-bosh-lite" --cluster="kubo-bosh-lite" --user="kubo-bosh-lite-admin"
 	kubectl config use-context "kubo-bosh-lite"
 	kubectl get all
 	```
-	
+
 ## Troubleshooting
 
-Use this command to connect to the internal BOSH machine 
+Use this command to connect to the internal BOSH machine
 ```bash
 bosh int kubo/creds.yml --path /jumpbox_ssh/private_key > kubo/jumpbox.key
 chmod 600 kubo/jumpbox.key
 ssh jumpbox@192.168.50.6 -i kubo/jumpbox.key
 ```
-
-
